@@ -1,0 +1,33 @@
+name: First wheel from clean Noble
+on:
+  push:
+    branches: [verify/first-wheel-20261120]
+jobs:
+  walkthrough:
+    runs-on: ubuntu-24.04
+    container: ubuntu:24.04
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start with Ubuntu only and an ordinary student account
+        run: |
+          test ! -e /opt/ros
+          apt-get update -qq && apt-get install -y -qq sudo
+          useradd -m -s /bin/bash trainee
+          echo 'trainee ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/trainee
+          cp -R verify /home/trainee/check
+          chown -R trainee:trainee /home/trainee/check
+          runuser -u trainee -- bash /home/trainee/check/install.sh
+      - name: Exercise real rqt widgets and measure three full trials
+        run: |
+          apt-get install -y -qq xvfb xauth xdotool fonts-dejavu-core
+          runuser -u trainee -- xvfb-run -a -s '-screen 0 1400x900x24' bash /home/trainee/check/gui.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: first-wheel-evidence
+          path: /home/trainee/evidence/
