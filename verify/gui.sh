@@ -17,6 +17,10 @@ for stage in select p1 p3 pi; do
     done
     if [[ ! -f evidence/done-$stage ]]; then cat evidence/launch.log; exit 1; fi
     if [[ "$stage" != select ]]; then
+        for _ in {1..20}; do
+            if ros2 node list | grep -Fx /tuning_lab; then break; fi
+            sleep 1
+        done
         ros2 param get /tuning_lab kp
         ros2 param get /tuning_lab ki
         python3 check/measure.py "$stage"

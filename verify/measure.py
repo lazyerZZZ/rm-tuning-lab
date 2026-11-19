@@ -9,7 +9,11 @@ stage = sys.argv[1]
 rclpy.init()
 node = rclpy.create_node("wheel_readback")
 values = []
-sub = node.create_subscription(Float64, "/tuning_lab/output", lambda m: values.append(m.data), 100)
+times = []
+def record(m):
+    values.append(m.data)
+    times.append(time.monotonic())
+sub = node.create_subscription(Float64, "/tuning_lab/output", record, 100)
 reset = node.create_client(Trigger, "/tuning_lab/reset")
 assert reset.wait_for_service(timeout_sec=15.)
 deadline = time.monotonic() + 20
@@ -20,6 +24,7 @@ f = reset.call_async(Trigger.Request())
 rclpy.spin_until_future_complete(node, f, timeout_sec=5.)
 assert f.result().success
 values.clear()
+times.clear()
 deadline = time.monotonic() + 20
 while time.monotonic() < deadline:
     rclpy.spin_once(node, timeout_sec=.1)
@@ -27,6 +32,7 @@ while time.monotonic() < deadline:
     if len(values) > 1 and values[-1] == 0. and values[-2] > .1:
         if len(values) > 345: break
         values.clear()
+        times.clear()
 else:
     raise TimeoutError("missing trial boundary")
 tail = values[-26:-1]
@@ -35,6 +41,6 @@ print(stage, "tail range", min(tail), max(tail), "peak", peak, "samples", len(va
 goal = {"p1": .5, "p3": .75, "pi": 1.0}[stage]
 assert max(abs(v-goal) for v in tail) <= .01 and peak <= goal+.01
 with (Path.home()/"evidence"/(stage+".csv")).open("w") as out:
-    writer=csv.writer(out);writer.writerow(["sample","wheel_rad_s"]);writer.writerows(enumerate(values))
+    writer=csv.writer(out);writer.writerow(["elapsed_s","wheel_rad_s"]);writer.writerows((t-times[0], v) for t,v in zip(times,values))
 node.destroy_node()
 rclpy.shutdown()
