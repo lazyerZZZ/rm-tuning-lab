@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>轮迹 · RM 调参实验台</title><link rel="stylesheet" href="style.css">
+<header><strong>轮迹</strong><span>RM 调参实验台</span></header>
+<main><section class="scope"><label for="case">选择实验</label><select id="case"></select>
+<h1 id="title">响应曲线</h1><p id="lesson"></p>
+<figure><figcaption id="legend"></figcaption><canvas id="plot" aria-label="响应随时间的变化"></canvas></figure>
+</section><aside><h2>模型参数</h2><form id="knobs"></form><button id="reset">恢复默认参数</button><p role="status" id="status"></p></aside></main>
+<script src="app.js"></script></html>

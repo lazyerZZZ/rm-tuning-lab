@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>rm_tuning_lab</name>
+  <version>0.1.0</version>
+  <description>Chinese interactive ROS 2 controls and estimation lessons.</description>
+  <maintainer email="132586311+lazyerZZZ@users.noreply.github.com">lazyerZZZ</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rcl_interfaces</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <export><build_type>ament_python</build_type></export>
+</package>
