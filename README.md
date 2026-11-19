@@ -9,7 +9,7 @@
 以下命令面向已安装 ROS 2 Jazzy 的 Ubuntu 24.04。安装工具并编译一次：
 
 ```bash
-sudo apt install python3-colcon-common-extensions ros-jazzy-rqt-plot ros-jazzy-rqt-reconfigure
+sudo apt install python3-matplotlib python3-colcon-common-extensions ros-jazzy-rqt-plot ros-jazzy-rqt-reconfigure
 mkdir -p ~/rm_ws/src
 git clone https://github.com/lazyerZZZ/rm-tuning-lab.git ~/rm_ws/src/rm-tuning-lab
 cd ~/rm_ws

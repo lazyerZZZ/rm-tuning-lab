@@ -21,6 +21,11 @@ def main():
     thread.start()
     client = ParamClient(node, "/tuning_lab")
     try:
+        # Each rqt client has its own DDS discovery cache on startup.
+        for service in (client._get_params_client, client._set_params_client,
+                        client._describe_params_client):
+            if not service.wait_for_service(timeout_sec=15.0):
+                raise TimeoutError(service.srv_name)
         param = client.get_parameters(["kp"])[0]
         desc = client.describe_parameters(["kp"])[0]
         widget = DoubleEditor(client, param, desc)
