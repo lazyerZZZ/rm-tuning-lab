@@ -48,10 +48,10 @@ ros2 service call /tuning_lab/reset std_srvs/srv/Trigger '{}'
 
 ```bash
 python3 web_lab.py --plugin examples/custom_lab.py
-ros2 run rm_tuning_lab tuning_node --ros-args -p plugin:="$(pwd)/examples/custom_lab.py" -p case_id:=tank
+ros2 launch rm_tuning_lab lesson.launch.py case_id:=tank plugin:="$(ros2 pkg prefix --share rm_tuning_lab)/examples/custom_lab.py"
 ```
 
-插件导出 `CASES: dict[str, Case]`。每次实验调用 `factory(rng)` 初始化状态，返回 `step(t, params)`。按 0.02 s 更新，返回声明的每个信号。只使用传入的随机数生成器以便复现。
+完整签名、信号约定和最小运行检查见[自定义后端指南](docs/plugins.md)。插件导出 `CASES: dict[str, Case]`。每次实验调用 `factory(rng)` 初始化状态，返回 `step(t, params)`。按 0.02 s 更新，返回声明的每个信号。只使用传入的随机数生成器以便复现。
 
 ## 验证与许可
 

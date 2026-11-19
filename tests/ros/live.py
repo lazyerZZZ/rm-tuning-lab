@@ -1,4 +1,5 @@
 """Exercise an installed ROS executable through DDS and parameter services."""
+from pathlib import Path
 import os
 import signal
 import subprocess
@@ -36,8 +37,15 @@ class RosTests(unittest.TestCase):
                 ("wheel_step", "kp", 3., "effort"),
                 ("cart_stop", "q_position", 12., "output"),
                 ("range_wave", "r_measure", 0.3, "measurement"),
+                ("carriage_loops", "outer_kp", 2., "speed_reference"),
+                ("tank", "kp", 4., "output"),
             ]:
-                with self.subTest(case=case), simulator("-p", "case_id:=" + case):
+                args = ["-p", "case_id:=" + case]
+                if case == "tank":
+                    share = subprocess.check_output(
+                        ["ros2", "pkg", "prefix", "--share", "rm_tuning_lab"], text=True).strip()
+                    args.extend(["-p", "plugin:=" + str(Path(share) / "examples" / "custom_lab.py")])
+                with self.subTest(case=case), simulator(*args):
                     received = []
                     sub = node.create_subscription(Float64, "/tuning_lab/" + topic, received.append, 10)
                     client = AsyncParameterClient(node, "/tuning_lab")
