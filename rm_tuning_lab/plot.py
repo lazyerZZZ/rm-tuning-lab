@@ -1,6 +1,7 @@
 """Start the upstream rqt_plot widget when the lesson publisher is discoverable."""
 from python_qt_binding.QtCore import QTimer
 from rqt_plot.plot import Plot
+from .core import DT, STEPS
 
 
 class LessonPlot(Plot):
@@ -12,6 +13,12 @@ class LessonPlot(Plot):
         self.discovery = QTimer(self._widget)
         self.discovery.timeout.connect(self.connect_curves)
         self.discovery.start(250)
+
+    def restore_settings(self, plugin_settings, instance_settings):
+        super().restore_settings(plugin_settings, instance_settings)
+        if not instance_settings.value("x_limits", []):
+            # rqt creates its selected plotting backend while restoring settings.
+            self._data_plot.set_xlim([0.0, STEPS * DT + 2.0])
 
     def connect_curves(self):
         for topic in self.pending.copy():

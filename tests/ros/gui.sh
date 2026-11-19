@@ -22,7 +22,8 @@ for _ in {1..40}; do
     xdotool windowsize --sync "$plot_window" 900 520
     xdotool windowmove "$plot_window" 0 0
     xdotool windowraise "$plot_window"
-    sleep 8
+    ros2 service call /tuning_lab/reset std_srvs/srv/Trigger '{}' >/dev/null
+    sleep 6
     python3 tests/ros/capture.py "$plot_window"
     exit 0
   fi
