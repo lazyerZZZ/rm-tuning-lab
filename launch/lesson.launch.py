@@ -19,6 +19,6 @@ def generate_launch_description():
         TimerAction(period=2.0, actions=[
             ExecuteProcess(cmd=["ros2", "run", "rqt_plot", "rqt_plot",
                                 "/tuning_lab/reference/data", "/tuning_lab/output/data"], condition=gui),
-            ExecuteProcess(cmd=["ros2", "run", "rqt_reconfigure", "rqt_reconfigure"], condition=gui),
+            ExecuteProcess(cmd=["ros2", "run", "rqt_reconfigure", "rqt_reconfigure", "/tuning_lab"], condition=gui),
         ]),
     ])

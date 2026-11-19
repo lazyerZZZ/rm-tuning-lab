@@ -20,3 +20,10 @@ jobs:
           colcon build --packages-select rm_tuning_lab
           source install/setup.bash
           python3 tests/ros/live.py
+      - name: Launch both rqt windows in a virtual display and verify subscriptions
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends ros-jazzy-rqt-plot ros-jazzy-rqt-reconfigure python3-matplotlib xvfb xauth xdotool
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          xvfb-run -a bash tests/ros/gui.sh
