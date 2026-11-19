@@ -1,6 +1,6 @@
 from math import sin
 from .core import Case, Knob
-from .models import cart, sensor, wheel
+from .models import cart, sensor, wheel, moving_sensor
 
 
 PID = dict(kp=Knob("Kp · 比例", 1.5, 0, 12), ki=Knob("Ki · 积分", 3.0, 0, 16),
@@ -58,4 +58,23 @@ CASES.update({
     "cart_bias": lqr("小车恒定阻力", "3 秒后增加 1 N 恒载。将位置权重从 8 增至 30，检查末段还有多少位置偏差。", cart(load=lambda t: 1 if t >= 3 else 0)),
     "cart_limit": lqr("低推力定位", "驱动力限于 ±0.6 N。将 R 从 1 降到 0.1，观察控制量贴着上限的时间和越过目标的位置。", cart(limit=0.6)),
     "cart_waypoints": lqr("滑台双工位切换", "1 秒去 0.8 米，4 秒返回原点。将速度权重从 2 增至 10，比较折返时的过冲和耗时。", cart(target=lambda t: 0.8 if 1 <= t < 4 else 0)),
+})
+
+CV_KNOBS = dict(q_accel=Knob("每拍随机加速度方差 · (m/s²)²", 4., 0.01, 100),
+                r_measure=KF["r_measure"])
+CV_SIGNALS = (*FILTER, "velocity", "valid")
+
+CASES.update({
+    "range_still": kf("静止距离降噪", "真值固定 0.8 米。减小 Q，比较最后 4 秒的估计与原始读数抖动。", sensor(lambda t: 0.8)),
+    "range_noisy": kf("测距噪声变大", "传感器标准差为 0.6 米。对照 R = 0.0625 与 0.36，比较平稳段抖动和阶跃后的滞后。", sensor(sigma=0.6)),
+    "range_pulse": kf("短时台阶读数", "目标在 3 至 3.4 秒升高 1 米。减小 Q，观察峰值被削弱多少。", sensor(lambda t: float(3 <= t < 3.4))),
+    "range_cruise": Case("匀速里程估计", "Kalman", "m",
+        "以 0.6 m/s 匀速行驶。查看 velocity，多次尝试不同 R，比较估计速度接近真值所需时间。",
+        CV_KNOBS, moving_sensor(lambda t: 0.6*t), CV_SIGNALS),
+    "range_dropout": Case("里程观测中断", "Kalman", "m",
+        "3 至 5 秒 valid 为 0，measurement 保持最后读数。观察 output 仅靠速度预测前进，以及读数恢复时的修正。",
+        CV_KNOBS, moving_sensor(lambda t: 0.5*t, lambda t: 3 <= t < 5), CV_SIGNALS),
+    "range_turn": Case("小车折返估计", "Kalman", "m",
+        "4 秒时速度从 +0.5 变为 −0.5 m/s。比较 q_accel = 1 和 40 时的转向滞后与匀速段抖动。",
+        CV_KNOBS, moving_sensor(lambda t: 0.5*min(t, 8-t)), CV_SIGNALS),
 })

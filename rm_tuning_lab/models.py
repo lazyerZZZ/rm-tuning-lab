@@ -90,3 +90,33 @@ def sensor(truth=lambda t: 1.0 if t >= 2 else 0.0, sigma=0.25):
             return {"reference": actual, "output": estimate, "measurement": reading}
         return step
     return factory
+
+
+def moving_sensor(truth, missing=lambda t: False, sigma=0.25):
+    """Constant-velocity KF with an independent random acceleration each sample."""
+    def factory(rng):
+        position = velocity = last_reading = 0.0
+        p00, p01, p11 = 1.0, 0.0, 1.0
+
+        def step(t, p):
+            nonlocal position, velocity, last_reading, p00, p01, p11
+            qa, r = p["q_accel"], p["r_measure"]
+            position += DT * velocity
+            a = p00 + 2 * DT * p01 + DT**2 * p11 + DT**4 * qa / 4
+            b = p01 + DT * p11 + DT**3 * qa / 2
+            c = p11 + DT**2 * qa
+            actual = truth(t)
+            reading = actual + rng.gauss(0, sigma)
+            valid = not missing(t)
+            if valid:
+                last_reading = reading
+                innovation = reading - position
+                position += a / (a + r) * innovation
+                velocity += b / (a + r) * innovation
+                p00, p01, p11 = a * r / (a + r), b * r / (a + r), c - b*b / (a+r)
+            else:
+                p00, p01, p11 = a, b, c
+            return {"reference": actual, "output": position, "measurement": last_reading,
+                    "velocity": velocity, "valid": float(valid)}
+        return step
+    return factory
