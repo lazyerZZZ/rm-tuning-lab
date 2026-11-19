@@ -1,6 +1,6 @@
 from math import sin
 from .core import Case, Knob
-from .models import cart, sensor, wheel, moving_sensor
+from .models import cart, sensor, wheel, moving_sensor, carriage
 
 
 PID = dict(kp=Knob("Kp · 比例", 1.5, 0, 12), ki=Knob("Ki · 积分", 3.0, 0, 16),
@@ -77,4 +77,17 @@ CASES.update({
     "range_turn": Case("小车折返估计", "Kalman", "m",
         "4 秒时速度从 +0.5 变为 −0.5 m/s。比较 q_accel = 1 和 40 时的转向滞后与匀速段抖动。",
         CV_KNOBS, moving_sensor(lambda t: 0.5*min(t, 8-t)), CV_SIGNALS),
+})
+
+CASCADE = dict(outer_kp=Knob("位置外环 Kp", 1.5, 0.1, 15),
+               inner_kp=Knob("速度内环 Kp", 1.5, 0, 6),
+               inner_ki=Knob("速度内环 Ki", 3., 0, 16))
+CASCADE_SIGNALS = ("reference", "output", "speed_reference", "velocity", "effort")
+CASES.update({
+    "carriage_loops": Case("位置与速度串级调节", "串级 PI", "m",
+        "将 outer_kp 设为 1，先比较 inner_ki 为 0 和 4 时的两条速度曲线。固定内环后，把外环从 1 提到 8，再看位置过冲。",
+        CASCADE, carriage(), CASCADE_SIGNALS, "m/s"),
+    "carriage_cap": Case("限速往返滑台", "串级 PI", "m",
+        "外环限速 ±0.4 m/s；1 秒去 1 米，5 秒返回。提高 outer_kp，检查速度目标削顶的时段和最终位置。",
+        CASCADE, carriage(0.4, lambda t: float(1 <= t < 5)), CASCADE_SIGNALS, "m/s"),
 })

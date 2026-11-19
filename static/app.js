@@ -2,7 +2,7 @@ const byId = id => document.getElementById(id);
 const picker = byId("case");
 const form = byId("knobs");
 let cases, rows = [], request = 0, baseline = null, completedParams = null;
-const colors = {reference:"#344958", output:"#00749e", measurement:"#b66519", effort:"#98448e"};
+const colors = {reference:"#344958", output:"#00749e", measurement:"#b66519", effort:"#98448e",speed_reference:"#344958",velocity:"#00749e"};
 const names = {reference:"目标 / 真值", output:"响应 / 估计", measurement:"观测", effort:"控制量"};
 
 function drawPanel(canvas, keys) {
@@ -30,7 +30,7 @@ function drawPanel(canvas, keys) {
   }
   for(const key of keys) {
     ctx.strokeStyle=colors[key] || "#405b58";ctx.lineWidth=key==="output"?2.7:1.4;
-    ctx.setLineDash(key==="reference"?[6,4]:[]);ctx.beginPath();
+    ctx.setLineDash((key==="reference" || key==="speed_reference")?[6,4]:[]);ctx.beginPath();
     rows.forEach((row,i)=>i?ctx.lineTo(x(row.t),y(row[key])):ctx.moveTo(x(row.t),y(row[key])));
     ctx.stroke();
   }
@@ -41,7 +41,8 @@ function draw() {
   const c = cases[picker.value];
   const primary = ["measurement","reference","output"].filter(k => k in rows[0]);
   const extra = Object.keys(rows[0]).filter(k => k !== "t" && !primary.includes(k));
-  const panels = [[primary, c.unit], ...extra.map(k => [[k], ({
+  const speeds = extra.filter(k=>k==="speed_reference" || k==="velocity");
+  const panels = [[primary, c.unit], ...(speeds.length ? [[speeds,"m/s"]] : []), ...extra.filter(k=>!speeds.includes(k)).map(k => [[k], ({
     effort:c.effort_unit || (c.group==="PID" ? c.unit : ""),
     velocity:"m/s", valid:"0 / 1"
   })[k] || ""])];
@@ -59,7 +60,7 @@ function draw() {
       item.style.color=colors[key] || "#405b58";
       item.textContent=key==="reference" ? (c.group==="Kalman"?"仿真真值":"目标")
         : key==="output" ? (c.group==="Kalman"?"估计":"实际响应")
-        : ({velocity:"估计速度",valid:"观测有效",...names})[key] || key;
+        : ({velocity:c.group==="Kalman"?"估计速度":"实际速度",speed_reference:"目标速度",valid:"观测有效",...names})[key] || key;
       caption.append(item);
     }
     if(baseline && keys.includes("output")) {

@@ -120,3 +120,30 @@ def moving_sensor(truth, missing=lambda t: False, sigma=0.25):
                     "velocity": velocity, "valid": float(valid)}
         return step
     return factory
+
+
+def carriage(speed_limit=1.2, target=lambda t: float(t >= 1)):
+    """Outer position P loop commands an inner velocity PI loop."""
+    def factory(rng):
+        position = velocity = integral = 0.0
+
+        def step(t, p):
+            nonlocal position, velocity, integral
+            goal = target(t)
+            command = clamp(p["outer_kp"] * (goal - position), speed_limit)
+            error = command - velocity
+            candidate = integral + DT * error
+            raw = p["inner_kp"] * error + p["inner_ki"] * candidate
+            drive = clamp(raw, 2.0)
+            if (raw - drive) * error <= 0:
+                integral = candidate
+            row = dict(reference=goal, output=position, effort=drive,
+                       speed_reference=command, velocity=velocity)
+            # Exact held-input transition of dv/dt = (drive - v) / tau.
+            tau = 0.2
+            change = (drive - velocity) * (1 - exp(-DT / tau))
+            position += drive * DT - tau * change
+            velocity += change
+            return row
+        return step
+    return factory
