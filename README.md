@@ -26,6 +26,12 @@ ros2 run rqt_reconfigure rqt_reconfigure
 
 在参数窗口选中 `/tuning_lab`，设 `ki=0.0`、`kd=0.0`，比较 `kp=1.0` 和 `kp=3.0`。每隔 8 秒自动从静止重跑，1 秒时目标轮速跳至 1 rad/s。比例控制下轮速应分别维持在 0.5 和 0.75 rad/s 左右。恢复 `ki=3.0` 后再看末段误差。运行中改增益从下一拍生效，等待下一个完整周期可以公平比较。
 
+如果刚好在周期中途改了参数，可立即从同一初始状态重跑。参数保留，随机噪声序列复原。也可以在 rqt_plot 添加 `/tuning_lab/trial_time/data` 辨认周期边界。
+
+```bash
+ros2 service call /tuning_lab/reset std_srvs/srv/Trigger '{}'
+```
+
 ## 选择实验
 
 启动时改变 `case_id`。轮组实验有 `wheel_step`、`wheel_load`，滑台有 `cart_stop`、`cart_heavy`，测距实验有 `range_step`、`range_wave`。PID 与 LQR 的第三条曲线是 `/tuning_lab/effort/data`，Kalman 的第三条曲线是 `/tuning_lab/measurement/data`。它的 reference 为仿真真值，output 为估计值。每个实验的操作与观察提示会打印在节点终端。

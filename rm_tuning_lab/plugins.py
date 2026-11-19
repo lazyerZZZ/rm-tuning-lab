@@ -7,7 +7,7 @@ from .catalog import CASES
 
 
 NAME = re.compile(r"[a-z][a-z0-9_]*")
-RESERVED = {"case_id", "plugin", "seed", "use_sim_time", "t"}
+RESERVED = {"case_id", "plugin", "seed", "use_sim_time", "t", "trial_time", "reset"}
 
 
 def validate_cases(mapping):

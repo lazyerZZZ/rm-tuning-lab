@@ -10,6 +10,7 @@ import rclpy
 from rclpy.parameter import Parameter
 from rclpy.parameter_client import AsyncParameterClient
 from std_msgs.msg import Float64
+from std_srvs.srv import Trigger
 
 
 @contextmanager
@@ -48,6 +49,12 @@ class RosTests(unittest.TestCase):
                     while len(received) < 10 and time.monotonic() < end:
                         rclpy.spin_once(node, timeout_sec=0.1)
                     self.assertGreaterEqual(len(received), 10)
+                    reset = node.create_client(Trigger, "/tuning_lab/reset")
+                    self.assertTrue(reset.wait_for_service(timeout_sec=5.))
+                    future = reset.call_async(Trigger.Request())
+                    rclpy.spin_until_future_complete(node, future, timeout_sec=5.)
+                    self.assertTrue(future.result().success)
+                    node.destroy_client(reset)
                     node.destroy_subscription(sub)
         finally:
             node.destroy_node()

@@ -3,6 +3,7 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from rcl_interfaces.msg import FloatingPointRange, ParameterDescriptor, SetParametersResult
 from std_msgs.msg import Float64
+from std_srvs.srv import Trigger
 
 from .core import DT, STEPS, Trial, parameters
 from .plugins import catalog
@@ -27,6 +28,8 @@ class TuningNode(Node):
         self.trial = Trial(self.case, self.seed)
         self.channels = {s: self.create_publisher(Float64, "~/" + s, 10)
                          for s in self.case.signals}
+        self.trial_time = self.create_publisher(Float64, "~/trial_time", 10)
+        self.create_service(Trigger, "~/reset", self.reset)
         self.create_timer(DT, self.tick)
         self.get_logger().info(f"{case_id} | {self.case.lesson}")
 
@@ -38,11 +41,18 @@ class TuningNode(Node):
             return SetParametersResult(successful=False, reason=str(error))
         return SetParametersResult(successful=True)
 
+    def reset(self, request, response):
+        self.trial = Trial(self.case, self.seed)
+        response.success = True
+        response.message = "已使用当前参数和相同随机种子重置实验"
+        return response
+
     def tick(self):
         if self.trial.index >= STEPS:
             self.trial = Trial(self.case, self.seed)
         params = {k: self.get_parameter(k).value for k in self.case.knobs}
         row = self.trial.tick(params)
+        self.trial_time.publish(Float64(data=row["t"]))
         for key, publisher in self.channels.items():
             publisher.publish(Float64(data=float(row[key])))
 
