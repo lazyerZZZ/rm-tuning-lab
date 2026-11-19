@@ -2,6 +2,8 @@
 
 面向 RoboMaster 新队员的中文 ROS 2 教学项目。先猜改变一个参数后曲线会怎样，再在 rqt 里动手验证。所有实验使用模拟轮组、滑台和传感器。
 
+**从没用过 ROS？** [新手图文教程：安装 ROS 2，在 rqt 里调好第一个轮速环](docs/first-wheel/README.md)，每一步都有检查点，含参数面板实拍和三轮轮速对照图。
+
 [从轮速开始的四堂实验课](docs/lessons.md) · [全部 25 个实验及调参任务](docs/catalog.md) · [自定义模型示例](examples/custom_lab.py)
 
 ## 在 rqt 中做第一个实验
