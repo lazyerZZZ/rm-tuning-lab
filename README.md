@@ -14,10 +14,10 @@ cd ~/rm_ws
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install --packages-select rm_tuning_lab
 source install/setup.bash
-ros2 run rm_tuning_lab tuning_node --ros-args -p case_id:=wheel_step
+ros2 launch rm_tuning_lab lesson.launch.py case_id:=wheel_step
 ```
 
-另开两个终端，各执行 `source ~/rm_ws/install/setup.bash`，然后分别启动：
+上面的 launch 会打开曲线和参数两个窗口。如果用了 `gui:=false`，可在另外两个已加载工作区环境的终端分别启动：
 
 ```bash
 ros2 run rqt_plot rqt_plot /tuning_lab/reference/data /tuning_lab/output/data
