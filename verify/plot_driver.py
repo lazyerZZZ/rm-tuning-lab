@@ -30,6 +30,10 @@ def install(cls):
             (out/"plots-ready").touch()
             if (out/"capture").exists():
                 widget.window().resize(930, 540)
+                # Show a full eight-second trial, as with a manual X-axis zoom-out.
+                right = max(self._data_plot._curves[p+"/data"]["x"][-1] for p in paths)
+                self._data_plot.set_xlim([right - 9., right])
+                self._data_plot.redraw()
                 QTest.qWait(350)
                 widget.window().grab().save(str(out/"rqt-plot.png"))
                 (out/"captured").touch()
