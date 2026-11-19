@@ -53,7 +53,7 @@ def collect(node, case):
     keys = ("trial_time", *SIGNALS[case])
     def callback(key):
         def receive(msg, info):
-            streams[key].append((info.source_timestamp, msg.data))
+            streams[key].append((info["source_timestamp"], msg.data))
         return receive
     for key in keys:
         node.create_subscription(Float64, "/tuning_lab/" + key, callback(key), 100)
