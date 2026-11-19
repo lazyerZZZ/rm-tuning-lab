@@ -156,4 +156,6 @@ ros2 service call /tuning_lab/reset std_srvs/srv/Trigger '{}'
 
 **收工和复做**：把本次通过的 `kp=3.0, ki=3.0, kd=0.0` 记下来，在终端 A 按 **Ctrl + C** 关闭仿真和两个窗口。下次从第 4 步启动，重新输入这组参数即可。想看轮子遇到阻力时是否还跟得上，可继续做[轮组持续负载实验](../catalog.md)。
 
+轮速环完成后，下一步可以[让速度内环驱动位置外环](../rqt-labs/cascade/README.md)，或按[三次 rqt 实验目录](../rqt-labs/README.md)选课。
+
 **复走环境**：Ubuntu 24.04.5（amd64）干净容器，普通用户安装 ROS 2 Jazzy，在 Xvfb 虚拟显示器中运行 rqt 图形窗口。可在运行日志核对安装、编译、参数回读和三轮输出；实拍面板和原始 CSV 位于该次运行的 first-wheel-evidence 附件。[完整复走记录](https://github.com/lazyerZZZ/rm-tuning-lab/actions/runs/44594479469)

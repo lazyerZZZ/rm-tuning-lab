@@ -13,6 +13,8 @@
 
 ## 第二课 · 小车能更省力地停下来吗？
 
+[跟着真实 rqt 面板做：LQR 限力停车](rqt-labs/lqr/README.md)
+
 启动 `cart_stop`。小车质量 1 kg，状态为位置和速度，驱动力限制为 ±4 N。先用目标与位置曲线看时间，再单独查看 `/tuning_lab/effort/data` 看力。位置单位为米，力单位为牛顿。
 
 1. 保持 `q_position=8.0, q_velocity=2.0`。比较 `r_effort=1.0` 与 `5.0`。R 表示代价函数中使用驱动力的成本。
@@ -23,6 +25,8 @@
 
 ## 第三课 · 更平滑的距离估计会迟到多久？
 
+[跟着真实 rqt 面板做：Kalman 距离估计](rqt-labs/kalman/README.md)
+
 启动 `range_step`。在 rqt_plot 再添加 `/tuning_lab/measurement/data`。reference 是仿真真值，measurement 是含噪测量，output 是滤波估计。标量随机游走模型用 Q 表示每步过程方差，用 R 表示测量方差，单位均为 m²。
 
 1. 保持 `q_process=0.002`，先设 `r_measure=0.0625`。真值在 2 秒时从 0 跳到 1 m。R 对应 0.25 m 标准差的平方。
@@ -30,6 +34,8 @@
 3. 换 `range_dropout`。它用位置、速度两个状态，Q 参数改为每拍随机加速度方差。3–5 秒观测中断，valid=0，估计按速度外推。measurement 保持最后读数，滤波器在此期间只执行预测。[Welch 与 Bishop 的 Kalman 滤波入门](https://www.cs.unc.edu/~welch/media/pdf/kalman_intro.pdf)
 
 ## 第四课 · 速度环和位置环先调哪一个？
+
+[跟着真实 rqt 面板做：串级滑台定位](rqt-labs/cascade/README.md)
 
 启动 `carriage_loops`。用一组曲线比较 `speed_reference/data` 与 `velocity/data`（m/s），用另一组比较 `reference/data` 与 `output/data`（m）。位置外环产生限幅后的速度目标，速度内环据此驱动滑台。
 
