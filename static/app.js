@@ -5,13 +5,11 @@ let cases, rows = [], request = 0;
 const colors = {reference:"#344958", output:"#00749e", measurement:"#b66519", effort:"#98448e"};
 const names = {reference:"目标 / 真值", output:"响应 / 估计", measurement:"观测", effort:"控制量"};
 
-function draw() {
-  if (!rows.length) return;
-  const canvas = byId("plot"), w = canvas.clientWidth, h = canvas.clientHeight;
+function drawPanel(canvas, keys) {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
   const scale = window.devicePixelRatio || 1;
   canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
   const ctx = canvas.getContext("2d"); ctx.scale(scale, scale);
-  const keys = Object.keys(rows[0]).filter(k => k !== "t");
   const values = rows.flatMap(row => keys.map(k => row[k]));
   const lo = Math.min(0,...values)-0.1, hi = Math.max(0,...values)+0.1;
   const x = t => 49 + (w-68) * t / rows[rows.length-1].t;
@@ -30,9 +28,38 @@ function draw() {
     rows.forEach((row,i)=>i?ctx.lineTo(x(row.t),y(row[key])):ctx.moveTo(x(row.t),y(row[key])));
     ctx.stroke();
   }
-  byId("legend").replaceChildren(...keys.map(key=>{
-    const item=document.createElement("span");item.style.color=colors[key];item.textContent=names[key]||key;return item;
-  }));
+}
+
+function draw() {
+  if (!rows.length) return;
+  const c = cases[picker.value];
+  const primary = ["measurement","reference","output"].filter(k => k in rows[0]);
+  const extra = Object.keys(rows[0]).filter(k => k !== "t" && !primary.includes(k));
+  const panels = [[primary, c.unit], ...extra.map(k => [[k], ({
+    effort:c.effort_unit || (c.group==="PID" ? c.unit : ""),
+    velocity:"m/s", valid:"0 / 1"
+  })[k] || ""])];
+  const container = byId("plots");
+  container.replaceChildren();
+  for (const [keys,unit] of panels) {
+    const figure=document.createElement("figure");
+    if(keys!==primary) figure.className="aux";
+    const caption=document.createElement("figcaption");
+    const unitLabel=document.createElement("b");
+    unitLabel.textContent=unit || "模型单位";
+    caption.append(unitLabel);
+    for(const key of keys) {
+      const item=document.createElement("span");
+      item.style.color=colors[key] || "#405b58";
+      item.textContent=key==="reference" ? (c.group==="Kalman"?"仿真真值":"目标")
+        : key==="output" ? (c.group==="Kalman"?"估计":"实际响应")
+        : ({velocity:"估计速度",valid:"观测有效",...names})[key] || key;
+      caption.append(item);
+    }
+    const canvas=document.createElement("canvas");
+    canvas.setAttribute("aria-label", caption.textContent+" 随时间变化");
+    figure.append(caption,canvas);container.append(figure);drawPanel(canvas,keys);
+  }
 }
 async function run() {
   const id=++request;

@@ -26,6 +26,7 @@ class Case:
     factory: Callable
     # factory(rng) returns step(t, params) -> dict[str, float].
     signals: tuple = ("reference", "output", "effort")
+    effort_unit: str = ""
 
 
 def parameters(case, overrides=None):

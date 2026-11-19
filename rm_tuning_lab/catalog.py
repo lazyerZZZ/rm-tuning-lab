@@ -18,7 +18,7 @@ def pid(title, lesson, model):
 
 
 def lqr(title, lesson, model):
-    return Case(title, "LQR", "m", lesson, LQR, model)
+    return Case(title, "LQR", "m", lesson, LQR, model, effort_unit="N")
 
 
 def kf(title, lesson, model):

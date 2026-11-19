@@ -24,7 +24,7 @@ class Handler(SimpleHTTPRequestHandler):
         url = urlsplit(self.path)
         cases = self.server.cases
         if url.path == "/api/cases":
-            self.json_response({k: dict(title=c.title, group=c.group, unit=c.unit, lesson=c.lesson,
+            self.json_response({k: dict(title=c.title, group=c.group, unit=c.unit, effort_unit=c.effort_unit, lesson=c.lesson,
                                         knobs={p: asdict(v) for p, v in c.knobs.items()})
                                 for k, c in cases.items()})
         elif url.path == "/api/run":
