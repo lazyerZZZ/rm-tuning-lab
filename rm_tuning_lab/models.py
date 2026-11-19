@@ -9,26 +9,32 @@ def clamp(value, limit):
 
 
 def wheel(tau=0.25, load=lambda t: 0.0, target=lambda t: 1.0 if t >= 1 else 0.0,
-          noise=0.0, limit=3.0):
+          noise=0.0, limit=3.0, encoder_step=0.0, show_reading=False):
     """First-order speed plant. The effort unit is equivalent steady-state speed."""
     def factory(rng):
-        speed = integral = last = 0.0
+        speed = integral = last = derivative = 0.0
 
         def step(t, p):
-            nonlocal speed, integral, last
+            nonlocal speed, integral, last, derivative
             reference = target(t)
             reading = speed + rng.gauss(0, noise)
+            if encoder_step:
+                reading = round(reading / encoder_step) * encoder_step
             error = reference - reading
-            derivative = (last - reading) / DT
+            slope = (last - reading) / DT
+            derivative += DT / (DT + p.get('d_filter', 0.0)) * (slope - derivative)
             last = reading
             candidate = integral + error * DT
             raw = p["kp"] * error + p["ki"] * candidate + p["kd"] * derivative
             effort = clamp(raw, limit)
-            if (raw - effort) * error <= 0:
+            if p.get('anti_windup', 1.0) < 0.5 or (raw - effort) * error <= 0:
                 integral = candidate
             speed_now = speed
             speed += (1 - exp(-DT / tau)) * (effort - load(t) - speed)
-            return {"reference": reference, "output": speed_now, "effort": effort}
+            row = {"reference": reference, "output": speed_now, "effort": effort}
+            if show_reading:
+                row["measurement"] = reading
+            return row
         return step
     return factory
 
