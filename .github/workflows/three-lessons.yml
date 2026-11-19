@@ -1,0 +1,35 @@
+name: Rehearse three rqt lessons
+on:
+  push:
+    branches: [verify/three-rqt-lessons-20261120]
+jobs:
+  rqt:
+    runs-on: ubuntu-24.04
+    container: ros:jazzy-ros-base
+    strategy:
+      fail-fast: false
+      matrix:
+        lesson: [carriage_loops, cart_stop, range_step]
+    env:
+      LESSON: ${{ matrix.lesson }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Jazzy workspace and install rqt
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends ros-jazzy-rqt-plot ros-jazzy-rqt-reconfigure python3-matplotlib xvfb xauth xdotool
+          source /opt/ros/jazzy/setup.bash
+          colcon build --symlink-install --packages-select rm_tuning_lab
+      - name: Tune in rqt and record complete node output
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          source install/setup.bash
+          xvfb-run -a -s '-screen 0 1400x900x24' bash verify/play.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.lesson }}
+          path: evidence/
