@@ -14,5 +14,10 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>rqt_plot</exec_depend>
   <exec_depend>rqt_reconfigure</exec_depend>
-  <export><build_type>ament_python</build_type></export>
+  <exec_depend>python_qt_binding</exec_depend>
+  <exec_depend>rqt_gui</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
+  </export>
 </package>

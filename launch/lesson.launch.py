@@ -17,8 +17,7 @@ def generate_launch_description():
         Node(package="rm_tuning_lab", executable="tuning_node", output="screen",
              parameters=[{"case_id": case, "plugin": plugin}]),
         TimerAction(period=2.0, actions=[
-            ExecuteProcess(cmd=["ros2", "run", "rqt_plot", "rqt_plot",
-                                "/tuning_lab/reference/data", "/tuning_lab/output/data"], condition=gui),
-            ExecuteProcess(cmd=["ros2", "run", "rqt_reconfigure", "rqt_reconfigure", "/tuning_lab"], condition=gui),
+            ExecuteProcess(cmd=["ros2", "run", "rm_tuning_lab", "lesson_plot"], condition=gui),
+            ExecuteProcess(cmd=["ros2", "run", "rqt_reconfigure", "rqt_reconfigure"], condition=gui),
         ]),
     ])

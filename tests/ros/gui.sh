@@ -13,7 +13,7 @@ trap finish EXIT
 for _ in {1..40}; do
   sleep 1
   titles=$(xdotool search --onlyvisible --name '.+' getwindowname %@ 2>/dev/null || true)
-  if [[ $(printf '%s\n' "$titles" | sort -u | wc -l) -ge 2 ]] &&
+  if [[ "$titles" == *"LessonPlot"* && "$titles" == *"rqt_reconfigure"* ]] &&
       ros2 topic info /tuning_lab/output | grep -Eq 'Subscription count: [1-9]' &&
       ros2 topic info /tuning_lab/reference | grep -Eq 'Subscription count: [1-9]'; then
     printf '%s\n' "$titles"

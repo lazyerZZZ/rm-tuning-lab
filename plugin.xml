@@ -1,0 +1,6 @@
+<library path=".">
+  <class name="LessonPlot" type="rm_tuning_lab.plot.LessonPlot" base_class_type="rqt_gui_py::Plugin">
+    <description>rqt_plot with discovery-aware startup for a tuning lesson.</description>
+    <qtgui><group><label>Visualization</label></group><label>RM tuning curves</label></qtgui>
+  </class>
+</library>
