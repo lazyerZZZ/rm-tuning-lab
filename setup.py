@@ -8,7 +8,7 @@ setup(
         ("share/ament_index/resource_index/packages", ["resource/rm_tuning_lab"]),
         ("share/rm_tuning_lab", ["package.xml", "plugin.xml"]),
         ("share/rm_tuning_lab/launch", ["launch/lesson.launch.py"]),
-        ("share/rm_tuning_lab/examples", ["examples/custom_lab.py"]),
+        ("share/rm_tuning_lab/examples", ["examples/custom_lab.py", "examples/loaded_chassis.py"]),
     ],
     entry_points={"console_scripts": ["tuning_node = rm_tuning_lab.node:main",
                                       "lesson_plot = rm_tuning_lab.plot:main"]},

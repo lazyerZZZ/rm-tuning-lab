@@ -13,11 +13,15 @@ SIGNALS = {
     "carriage_loops": ("reference", "output", "speed_reference", "velocity"),
     "cart_stop": ("reference", "output", "effort"),
     "range_step": ("reference", "output", "measurement"),
+    "chassis_step_load": ("reference", "output", "effort"),
+    "chassis_drive_lag": ("reference", "output", "effort", "load", "drive_actual"),
 }
 KNOBS = {
     "carriage_loops": ("outer_kp", "inner_kp", "inner_ki"),
     "cart_stop": ("q_position", "q_velocity", "r_effort"),
     "range_step": ("r_measure", "q_process", "seed"),
+    "chassis_step_load": ("kp", "ki", "kd"),
+    "chassis_drive_lag": ("kp", "ki", "load_drag"),
 }
 
 
@@ -75,7 +79,42 @@ def rmse(rows, value, reference):
     return math.sqrt(sum((r[value] - r[reference])**2 for r in rows) / len(rows))
 
 
+def chassis_scores(case, rows):
+    post = [r for r in rows if r["trial_time"] >= 4.]
+    minimum = min(r["output"] for r in post)
+    drop = post[0]["output"] - minimum
+    pre_error = max(abs(r["output"] - 1.) for r in rows[175:200])
+    tail_error = max(abs(r["output"] - 1.) for r in post[-25:])
+    last_bad = max((i for i, r in enumerate(post) if abs(r["output"] - 1.) > .02), default=-1)
+    next_index = last_bad + 1
+    recovery = post[next_index]["trial_time"] - 4. if next_index < len(post) else math.inf
+
+    # The built-in wheel exposes speed and command. Invert its exact sampled
+    # update to independently check the applied load on each observable interval.
+    if case == "chassis_step_load":
+        gain = -math.expm1(-.02 / .35)
+        loads = [(r["trial_time"], r["effort"] - r["output"] -
+                  (nxt["output"] - r["output"]) / gain)
+                 for r, nxt in zip(rows, rows[1:])]
+        required = .45
+    else:
+        loads = [(r["trial_time"], r["load"]) for r in rows]
+        required = .90
+    load_ok = all(abs(v - (required if t >= 4. else 0.)) < 1e-6 for t, v in loads)
+    ref_ok = all(r["reference"] == float(r["trial_time"] >= 1.) for r in rows)
+    recovery_text = f"{recovery:.2f} s" if math.isfinite(recovery) else "周期结束仍未恢复"
+    print(f"工况核对（1 s 阶跃，4 s 持续加载 {required:.2f}）："
+          + ("符合" if load_ok and ref_ok else "不符合"))
+    print(f"加载前半秒最大误差 = {pre_error:.4f} rad/s；加载后最低轮速 = {minimum:.4f} rad/s")
+    print(f"相对加载瞬间掉速 = {drop:.4f} rad/s；恢复并留在 ±2% 带 = {recovery_text}")
+    print(f"末半秒最大误差 = {tail_error:.4f} rad/s")
+    return (load_ok and ref_ok and pre_error <= .02 and minimum >= .74
+            and recovery <= 1.20 + 1e-9 and tail_error <= .01)
+
+
 def scores(case, rows):
+    if case in ("chassis_step_load", "chassis_drive_lag"):
+        return chassis_scores(case, rows)
     start = next(r["trial_time"] for r in rows if r["reference"] == 1.)
     hit = next((r["trial_time"] for r in rows if r["trial_time"] >= start and r["output"] >= .9), None)
     delay = hit - start if hit is not None else math.inf

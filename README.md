@@ -52,6 +52,8 @@ ros2 service call /tuning_lab/reset std_srvs/srv/Trigger '{}'
 
 ## 添加实验与后端
 
+[跟做教程：从复制模板到在 rqt 里验收自己的重载底盘轮组](docs/custom-chassis/README.md)。先给已有轮组换路面阻力，再写有驱动滞后的后端，用相同指标比较六轮结果。
+
 [自定义实例文件](examples/custom_lab.py) 含两种写法。slow_wheel 复用轮组模型并改变惯性，tank 定义自己的状态、更新方程和可调参数。使用本机可信 Python 文件加载：
 
 ```bash

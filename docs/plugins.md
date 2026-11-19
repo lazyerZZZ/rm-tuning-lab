@@ -1,5 +1,7 @@
 # 写一个可以在 rqt 调参的后端
 
+第一次写插件可从[底盘轮组图文教程](custom-chassis/README.md)开始；下面是实例注册和后端接口的速查。
+
 复制 [custom_lab.py](../examples/custom_lab.py) 到自己的工作目录。这个文件导出两个可单独启动的实例。运行时只需把 launch 的 plugin 参数指向文件的绝对路径。插件是随本地进程执行的 Python 代码。
 
 **只改场景。** 参照 `slow_wheel`，使用 `pid(标题, 教学任务, wheel(...))`。例如指定 `tau=0.8` 改电机时间常数，或传入 `load=lambda t: 0.5 if t >= 3 else 0` 在第 3 秒加负载。已有模型还包括滑台 cart 和标量传感器 sensor。每次使用一个新的小写实例 ID。
