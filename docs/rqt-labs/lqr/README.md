@@ -65,3 +65,5 @@ python3 ~/rm_ws/src/rm-tuning-lab/tools/score_trial.py
 ```
 
 力超预算时，先固定两个 Q，提高 R；力合格但过冲偏大时，再小幅提高速度权重。每次都把到达时间记下来，防止为压低峰值而错过期限。[下载四轮原始话题数据](samples.csv)
+
+本课最终验收通过后，关闭本课窗口，继续[第四课 · Kalman 测距](../kalman/README.md)。也可[返回首页查看整条路线](../../../README.md)。

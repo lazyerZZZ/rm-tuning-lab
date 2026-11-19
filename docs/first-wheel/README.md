@@ -38,12 +38,20 @@ locale charmap
 用 ROS 官方提供的软件源配置包添加 Jazzy 软件源。在**同一个终端**执行整块命令，以便后两行能读到版本号。
 
 ```bash
-ros_source_version=$(curl -fsSL -o /dev/null -w '%{url_effective}' https://github.com/ros-infrastructure/ros-apt-source/releases/latest)
+ros_source_version=$(curl -fsSL --retry 3 --retry-all-errors -o /dev/null -w '%{url_effective}' https://github.com/ros-infrastructure/ros-apt-source/releases/latest)
 ros_source_version=${ros_source_version##*/}
-curl -fL --retry 3 -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ros_source_version}/ros2-apt-source_${ros_source_version}.noble_all.deb" && sudo dpkg -i /tmp/ros2-apt-source.deb
+curl -fL --retry 3 --retry-all-errors -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ros_source_version}/ros2-apt-source_${ros_source_version}.noble_all.deb" && sudo dpkg -i /tmp/ros2-apt-source.deb
 ```
 
-继续安装。软件包较多，等终端重新出现可输入命令的提示符。
+若 GitHub 下载中断（例如反复显示 `curl: (35)`），可从 [ROS 官方软件包目录](https://repo.ros2.org/ubuntu/main/pool/main/r/ros-apt-source/)下载这次复走使用的 Noble 配置包。下列命令会按该版本发布的 SHA-256 校验下载文件，校验成功后才安装：
+
+```bash
+curl -fL --retry 3 --retry-all-errors -o /tmp/ros2-apt-source.deb 'https://repo.ros2.org/ubuntu/main/pool/main/r/ros-apt-source/ros2-apt-source_1.3.0~noble_all.deb' &&
+echo 'f31d84adf5054c7d60ded0e82c0f776a77ea33af53d08f40b9ad7c94cca55296  /tmp/ros2-apt-source.deb' | sha256sum -c - &&
+sudo dpkg -i /tmp/ros2-apt-source.deb
+```
+
+看到 `Setting up ros2-apt-source` 再继续。如果后面提示找不到 `ros-jazzy-ros-base`，检查配置包是否安装成功，以及 `apt update` 的输出是否包含 ROS 软件源。软件包较多，请等安装结束。
 
 ```bash
 sudo apt update
@@ -134,7 +142,7 @@ ros2 param get /tuning_lab ki
 ros2 param get /tuning_lab kd
 ```
 
-C 轮应依次读到 **3.0、3.0、0.0**。以下命令让车轮立刻回到静止，并保留当前三个参数。看到 `success=True` 后，回到曲线窗口观察新一轮：
+C 轮应依次读到 **3.0、3.0、0.0**。要按上面的标准验收，可在 B 运行 `python3 ~/rm_ws/src/rm-tuning-lab/tools/score_trial.py`，保持参数不变，等它打印最后半秒的轮速范围和阶跃峰值。以下命令让车轮立刻回到静止，并保留当前三个参数。看到 `success=True` 后，回到曲线窗口观察新一轮：
 
 ```bash
 ros2 service call /tuning_lab/reset std_srvs/srv/Trigger '{}'

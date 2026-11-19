@@ -1,68 +1,123 @@
 # 轮迹 · RM 调参实验台
 
-面向 RoboMaster 新队员的中文 ROS 2 教学项目。先猜改变一个参数后曲线会怎样，再在 rqt 里动手验证。所有实验使用模拟轮组、滑台和传感器。
+第一次在 RoboMaster 队里调电机？从一只模拟车轮开始：先看它为什么追不上目标，再让滑台既能到位又能刹住，最后给自己的底盘模型加上负载。全程使用 ROS 2 Jazzy 和 rqt，一台带图形桌面的 Ubuntu 24.04 电脑或虚拟机就能练习。
 
-**从没用过 ROS？** [新手图文教程：安装 ROS 2，在 rqt 里调好第一个轮速环](docs/first-wheel/README.md)，每一步都有检查点，含参数面板实拍和三轮轮速对照图。
+**从这里开始 → [安装 ROS、下载项目、编译工作区](docs/first-wheel/README.md)。** 先完成教程第 1–3 步。看到 `1 package finished`，且 `ros2 pkg prefix rm_tuning_lab` 指向 `~/rm_ws/install/rm_tuning_lab` 对应的绝对路径，就可以做第一课。
 
-**在 rqt 里继续调参**：[串级滑台定位](docs/rqt-labs/cascade/README.md) · [LQR 限力停车](docs/rqt-labs/lqr/README.md) · [Kalman 距离估计](docs/rqt-labs/kalman/README.md)。三课都有实拍面板、实测曲线、逐轮参数和验收命令。
+[① 轮速 PI](#wheel) → [② 串级定位](#cascade) → [③ LQR 限力停车](#lqr) → [④ Kalman 测距](#kalman) → [⑤ 自定义负载](#load) → [⑥ 自定义后端](#backend)
 
-[从轮速开始的四堂实验课](docs/lessons.md) · [全部 25 个实验及调参任务](docs/catalog.md) · [自定义模型示例](examples/custom_lab.py)
+## 每一课怎样开始、验收和换课
 
-## 在 rqt 中做第一个实验
+- **终端 A 启动本课。** 每开一个新终端，先执行下面两条命令，让它找到 ROS 和实验包。然后在 A 粘贴本课的启动命令，让窗口保持运行。
+- **在 rqt 改参数。** 在 Parameter Reconfigure 左侧点 `tuning_lab`，右侧输入数值后按 Enter。曲线按图例中的话题名辨认。每次只改一个量，观察下一个完整的 8 秒周期。
+- **在另一个终端验收。** 加载相同环境，执行下方验收命令，采样时保持参数不动。脚本会识别当前课，读满 400 拍并打印指标。对照轮显示「尚未通过」时，按本课参数表继续。最终一组显示 **本课最终验收：通过** 后再换课。回到 A 按 Ctrl+C；若另开过独立的 rqt_plot，也将它关闭，再启动下一课。
 
-以下命令面向已安装 ROS 2 Jazzy 的 Ubuntu 24.04。安装工具并编译一次：
+每个新终端都先执行：
 
 ```bash
-sudo apt install python3-matplotlib python3-colcon-common-extensions ros-jazzy-rqt-plot ros-jazzy-rqt-reconfigure
-mkdir -p ~/rm_ws/src
-git clone https://github.com/lazyerZZZ/rm-tuning-lab.git ~/rm_ws/src/rm-tuning-lab
-cd ~/rm_ws
 source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install --packages-select rm_tuning_lab
-source install/setup.bash
+source ~/rm_ws/install/setup.bash
+```
+
+启动命令会打开参数和曲线两个窗口。第二、三、六课还要单独看速度、力或负载，可在另一个已加载环境的终端执行 `ros2 run rqt_plot rqt_plot -e`。在 Topic 框输入完整字段（如 `/tuning_lab/effort/data`），点右侧 **+**。
+
+每课共用的验收命令：
+
+```bash
+python3 ~/rm_ws/src/rm-tuning-lab/tools/score_trial.py
+```
+
+<a id="wheel"></a>
+
+## 第一课 · 轮速环为什么总差一点？
+
+```bash
 ros2 launch rm_tuning_lab lesson.launch.py case_id:=wheel_step
 ```
 
-上面的 launch 会打开曲线和参数两个窗口。如果用了 `gui:=false`，可在另外两个已加载工作区环境的终端分别启动：
+目标为 1 rad/s。先关掉积分和微分，把 `kp` 从 1 调到 3，看实际轮速的平台从约 0.50 升到 0.75 rad/s。保持 `kp=3`，把 `ki` 调到 3，观察末段误差怎样消失。
+
+**进入下一课**：最后半秒轮速一直在 **0.99–1.01 rad/s**，阶跃后的峰值 **≤ 1.01 rad/s**。下一课会把这个速度环放进位置环里。[轮速环图文教程](docs/first-wheel/README.md#launch)
+
+<details>
+<summary>展开看第一课通过时的 rqt 曲线</summary>
+
+![目标阶跃后，实际轮速逐渐追上 1 rad/s 并保持到本轮结束](docs/first-wheel/route-pass.png)
+
+这次复走中，蓝线 `reference` 是目标轮速，红线 `output` 是实际轮速。两条线一起归零时，新一轮开始。你的窗口可能使用其他颜色。
+
+</details>
+
+<a id="cascade"></a>
+
+## 第二课 · 用速度内环完成位置定位
 
 ```bash
-ros2 run rqt_plot rqt_plot /tuning_lab/reference/data /tuning_lab/output/data
-ros2 run rqt_reconfigure rqt_reconfigure
+ros2 launch rm_tuning_lab lesson.launch.py case_id:=carriage_loops
 ```
 
-在参数窗口选中 `/tuning_lab`，设 `ki=0.0`、`kd=0.0`，比较 `kp=1.0` 和 `kp=3.0`。每隔 8 秒自动从静止重跑，1 秒时目标轮速跳至 1 rad/s。比例控制下轮速应分别维持在 0.5 和 0.75 rad/s 左右。恢复 `ki=3.0` 后再看末段误差。运行中改增益从下一拍生效，等待下一个完整周期可以公平比较。
+先让位置外环保持较弱，对照速度指令 `speed_reference` 与实际速度 `velocity`，调内环积分。再固定内环，增加 `outer_kp`，切回位置图检查过冲。
 
-![在 Jazzy 的 rqt_plot 中观察轮速目标和实际响应](docs/wheel-step-rqt.png)
+**进入下一课**：目标从 0 跳到 1 m 后，**1.20 s 内**首次到达 0.90 m，最高位置 **≤ 1.05 m**，最后半秒每拍位置误差 **≤ 0.01 m**。[串级控制图文教程](docs/rqt-labs/cascade/README.md)
 
-上图来自实际运行的 Jazzy 图形测试。红线是轮速目标，蓝线是模拟轮速。中途触发重置后，轮速从静止开始，随后跟随新的阶跃。图例的话题名可用于辨认不同会话中的颜色。
+<a id="lqr"></a>
 
-如果刚好在周期中途改了参数，可立即从同一初始状态重跑。参数保留，随机噪声序列复原。也可以在 rqt_plot 添加 `/tuning_lab/trial_time/data` 辨认周期边界。
+## 第三课 · LQR 怎样在推力预算内停车？
 
 ```bash
-ros2 service call /tuning_lab/reset std_srvs/srv/Trigger '{}'
+ros2 launch rm_tuning_lab lesson.launch.py case_id:=cart_stop
 ```
 
-## 选择实验
+还是去 1 m，这次给电机 **2 N** 的推力预算。用一扇窗看位置，另一扇看 `effort`。固定位置权重，先调 `r_effort` 约束用力，再调 `q_velocity` 压低过冲。
 
-启动时改变 `case_id`。可从 `wheel_step` 的轮速、`cart_stop` 的滑台定位、`range_step` 的测距或 `carriage_loops` 的串级控制开始。完整的参数对照任务见[实验目录](docs/catalog.md)。PID 与 LQR 的第三条曲线是 `/tuning_lab/effort/data`，Kalman 的第三条曲线是 `/tuning_lab/measurement/data`。它的 reference 为仿真真值，output 为估计值。每个实验的操作与观察提示会打印在节点终端。
+**进入下一课**：同一轮中，力的绝对值峰值 **≤ 2.00 N**，阶跃后 **2.40 s 内**首次到 0.90 m，最高位置 **≤ 1.01 m**。[LQR 图文教程](docs/rqt-labs/lqr/README.md)
 
-## 只有 Python 时
+<a id="kalman"></a>
 
-在仓库根目录运行 `python3 web_lab.py`，打开 <http://127.0.0.1:8765>。使用 Python 3.9+，无需安装第三方包。修改数字并按回车。浏览器与 ROS 节点共用模型，网页每次从相同初始状态整段重算。
-
-## 添加实验与后端
-
-[跟做教程：从复制模板到在 rqt 里验收自己的重载底盘轮组](docs/custom-chassis/README.md)。先给已有轮组换路面阻力，再写有驱动滞后的后端，用相同指标比较六轮结果。
-
-[自定义实例文件](examples/custom_lab.py) 含两种写法。slow_wheel 复用轮组模型并改变惯性，tank 定义自己的状态、更新方程和可调参数。使用本机可信 Python 文件加载：
+## 第四课 · Kalman 滤波能否既平稳又跟手？
 
 ```bash
-python3 web_lab.py --plugin examples/custom_lab.py
-ros2 launch rm_tuning_lab lesson.launch.py case_id:=tank plugin:="$(ros2 pkg prefix --share rm_tuning_lab)/examples/custom_lab.py"
+ros2 launch rm_tuning_lab lesson.launch.py case_id:=range_step
 ```
 
-完整签名、信号约定和最小运行检查见[自定义后端指南](docs/plugins.md)。插件导出 `CASES: dict[str, Case]`。每次实验调用 `factory(rng)` 初始化状态，返回 `step(t, params)`。按 0.02 s 更新，返回声明的每个信号。只使用传入的随机数生成器以便复现。
+在同一窗口比较仿真真值 `reference`、原始读数 `measurement` 和估计 `output`。先按传感器标准差设置测量方差 `r_measure`，再调每拍的过程方差 `q_process`。分别看跳变后的延迟和平稳段的抖动。
 
-## 验证与许可
+**进入下一课**：保留默认种子 7。真值跳变后 **0.30 s 内**估计首次到 0.90 m，最后 2 秒估计相对真值的均方根误差（RMSE）**≤ 0.09 m**。[Kalman 图文教程](docs/rqt-labs/kalman/README.md)
 
-`python3 -m unittest discover -s tests -v`。采用 [MIT 许可证](LICENSE)。
+<a id="load"></a>
+
+## 第五课 · 复制模板，给已有轮组加负载
+
+先按[自定义教程第 1–2 步](docs/custom-chassis/README.md)复制模板到 `~/rm_models/chassis_lesson.py`，在副本中注册 `chassis_step_load`。完成后启动：
+
+```bash
+ros2 launch rm_tuning_lab lesson.launch.py case_id:=chassis_step_load plugin:="$HOME/rm_models/chassis_lesson.py"
+```
+
+第 4 秒起加入 **0.45 rad/s 的等效阻力**。保持 Kp 不变，比较加大 Ki 前后轮速跌到多低、多久恢复。
+
+**进入下一课**：脚本确认负载工况符合，且四项同时达标：加载前半秒最大误差 **≤ 0.02 rad/s**；加载后最低轮速 **≥ 0.74 rad/s**；从加载起 **1.20 s 内**回到 **0.98–1.02 rad/s** 并保持至周期末；最后半秒最大误差 **≤ 0.01 rad/s**。
+
+<a id="backend"></a>
+
+## 第六课 · 写自己的驱动后端，验收重载底盘
+
+在 A 停掉上一课。按[自定义教程第 3 步](docs/custom-chassis/README.md#drive-backend)在同一副本里追加驱动滞后模型，再启动新实例：
+
+```bash
+ros2 launch rm_tuning_lab lesson.launch.py case_id:=chassis_drive_lag plugin:="$HOME/rm_models/chassis_lesson.py"
+```
+
+在独立曲线窗比较指令 `effort`、实际驱动 `drive_actual` 和阻力 `load`。先在原来的 0.45 负载下比较两种后端，然后把 `load_drag` 增至 0.90。先用 Kp 处理掉速，再用 Ki 缩短恢复时间。
+
+**结课**：确认验收的是自己副本里的 `chassis_drive_lag`；在 **0.90 rad/s 等效阻力**下，通过第五课相同的四项轮速指标。你现在可以改一个工况、注册自己的模型，并用同一组指标比较前后结果。[重载实测曲线与逐轮结果](docs/custom-chassis/README.md#chassis-results)
+
+**核对自己的结果**：本路线在未预装 ROS 的 Ubuntu 24.04.5（arm64）容器中，从普通账户安装 Jazzy 并编译。用虚拟显示器打开 rqt，按课次在参数框输入数值、查看曲线，用同一工作区走完六课。可以按课名和轮次对照[20 轮参数与实测验收输出](docs/route-acceptance.txt)。
+
+## 继续练习
+
+- 从[25 个内置实验](docs/catalog.md)挑一个新工况，用[四个基础问题](docs/lessons.md)练习读曲线。已有工作区的队员可以查[多窗口操作与故障排查](docs/rqt-labs/README.md)。
+- 如果手边只有 Python 3.9+，在仓库根目录运行 `python3 web_lab.py` 并打开 <http://127.0.0.1:8765>，可以用相同模型对照参数。上面六课的实时验收在 ROS 环境中完成。
+- 写插件时可查[接口字段说明](docs/plugins.md)、[起始模板](examples/custom_lab.py)和[重载参考答案](examples/loaded_chassis.py)。根目录运行 `python3 -m unittest discover -s tests -v` 可验证模型。
+
+项目采用 [MIT 许可证](LICENSE)。

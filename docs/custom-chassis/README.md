@@ -92,6 +92,8 @@ python3 ~/rm_ws/src/rm-tuning-lab/tools/score_trial.py
 
 ![复用模型的 rqt_plot 实拍，第 4 秒起目标不变而轮速短时跌落](reuse-live.png)
 
+<a id="drive-backend"></a>
+
 ## 3. 自定义后端：把驱动响应滞后写进模型
 
 先回 A 按 **Ctrl+C** 退出旧节点。下面整块追加到同一份副本。注意 Python 的缩进和最后一行独占一行的 `PY`。
@@ -174,6 +176,8 @@ ros2 run rqt_plot rqt_plot -e
 
 ![F 轮实际 rqt_plot，显示负载、控制指令与实际驱动](backend-live.png)
 
+<a id="chassis-results"></a>
+
 ## 4. 用实测记录核对自己的曲线
 
 以下速度和误差单位均为 rad/s。C 轮的动态指标可对照 B、D 阅读，工况核对会指出它使用轻载。
@@ -205,3 +209,5 @@ ros2 run rqt_plot rqt_plot -e
 做完后，在 A 和 B 分别按 Ctrl+C 关闭仿真与独立曲线窗。实测使用本机 Ubuntu 24.04 ARM64 容器、ROS 2 Jazzy、Xvfb 图形显示和普通用户工作区；参数由 Qt 点击、键入和回车写入真实 rqt 面板。两次启动回读的插件路径都指向学习者的副本。六轮共采集 2400 拍，CSV 中复用实例没有发布的字段留空。
 
 [可直接运行的参考答案](../../examples/loaded_chassis.py) · [六轮原始 CSV](samples.csv) · [自定义接口字段速查](../plugins.md)
+
+重载工况通过后，六课路线就走完了。[返回首页选择后续练习](../../README.md)或[浏览全部实验](../catalog.md)。

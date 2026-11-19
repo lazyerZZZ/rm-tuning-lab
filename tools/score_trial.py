@@ -10,6 +10,7 @@ from rclpy.parameter_client import AsyncParameterClient
 from std_msgs.msg import Float64
 
 SIGNALS = {
+    "wheel_step": ("reference", "output"),
     "carriage_loops": ("reference", "output", "speed_reference", "velocity"),
     "cart_stop": ("reference", "output", "effort"),
     "range_step": ("reference", "output", "measurement"),
@@ -17,6 +18,7 @@ SIGNALS = {
     "chassis_drive_lag": ("reference", "output", "effort", "load", "drive_actual"),
 }
 KNOBS = {
+    "wheel_step": ("kp", "ki", "kd"),
     "carriage_loops": ("outer_kp", "inner_kp", "inner_ki"),
     "cart_stop": ("q_position", "q_velocity", "r_effort"),
     "range_step": ("r_measure", "q_process", "seed"),
@@ -115,9 +117,15 @@ def chassis_scores(case, rows):
 def scores(case, rows):
     if case in ("chassis_step_load", "chassis_drive_lag"):
         return chassis_scores(case, rows)
+    if case == "wheel_step":
+        tail = [r["output"] for r in rows[-25:]]
+        peak = max(r["output"] for r in rows if r["reference"] == 1.)
+        print(f"最后半秒轮速范围 = {min(tail):.5f}–{max(tail):.5f} rad/s；阶跃峰值 = {peak:.5f} rad/s")
+        return min(tail) >= .99 and max(tail) <= 1.01 and peak <= 1.01
     start = next(r["trial_time"] for r in rows if r["reference"] == 1.)
     hit = next((r["trial_time"] for r in rows if r["trial_time"] >= start and r["output"] >= .9), None)
-    delay = hit - start if hit is not None else math.inf
+    # Events fall on the 0.02 s grid. Compare exact hundredths at the deadline.
+    delay = round(hit - start, 2) if hit is not None else math.inf
     peak = max(r["output"] for r in rows)
     if case == "carriage_loops":
         inner = rmse(rows[50:150], "velocity", "speed_reference")
@@ -158,7 +166,11 @@ def main():
                 writer = csv.DictWriter(f, fieldnames=list(rows[0]))
                 writer.writeheader()
                 writer.writerows(rows)
-        print("本课最终验收：" + ("通过" if scores(case, rows) else "尚未通过"))
+        passed = scores(case, rows)
+        if case == "range_step" and before["seed"] != 7:
+            print("本课使用相同的噪声序列比较参数，请将 seed 设为 7 后重测。")
+            passed = False
+        print("本课最终验收：" + ("通过" if passed else "尚未通过"))
     except ValueError as exc:
         raise SystemExit(str(exc))
     finally:

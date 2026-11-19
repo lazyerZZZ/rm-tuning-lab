@@ -57,3 +57,5 @@ python3 ~/rm_ws/src/rm-tuning-lab/tools/score_trial.py
 ```
 
 单次越过阈值可能受噪声影响，因此还要同时检查平稳段 RMSE。若改变随机种子，具体数字也会改变。本课验收使用固定种子 7 的同一组读数。[下载四轮原始话题数据](samples.csv)
+
+本课最终验收通过后，关闭本课窗口，继续[第五课 · 给自己的轮组加负载](../../custom-chassis/README.md)。也可[返回首页查看整条路线](../../../README.md)。
