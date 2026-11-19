@@ -51,3 +51,11 @@ CASES.update({
         PID, wheel(encoder_step=0.2, show_reading=True, target=lambda t: 0.35 if t >= 1 else 0),
         ("reference", "output", "effort", "measurement")),
 })
+
+CASES.update({
+    "cart_brake": lqr("滑台初速制动", "滑台以 1.5 m/s 滑出，目标位置保持为零。将速度权重从 2 增至 12，比较最远滑出距离。", cart(target=lambda t: 0., initial_velocity=1.5)),
+    "cart_push": lqr("小车短时受推", "3 至 3.5 秒受 2 N 干扰。提高位置权重，观察峰值位移偏差和恢复时的施力。", cart(load=lambda t: -2 if 3 <= t < 3.5 else 0)),
+    "cart_bias": lqr("小车恒定阻力", "3 秒后增加 1 N 恒载。将位置权重从 8 增至 30，检查末段还有多少位置偏差。", cart(load=lambda t: 1 if t >= 3 else 0)),
+    "cart_limit": lqr("低推力定位", "驱动力限于 ±0.6 N。将 R 从 1 降到 0.1，观察控制量贴着上限的时间和越过目标的位置。", cart(limit=0.6)),
+    "cart_waypoints": lqr("滑台双工位切换", "1 秒去 0.8 米，4 秒返回原点。将速度权重从 2 增至 10，比较折返时的过冲和耗时。", cart(target=lambda t: 0.8 if 1 <= t < 4 else 0)),
+})

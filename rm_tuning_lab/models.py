@@ -56,15 +56,16 @@ def gain(mass, qp, qv, r):
     return k0, k1
 
 
-def cart(mass=1.0, load=lambda t: 0.0, target=lambda t: 1.0 if t >= 1 else 0.0):
+def cart(mass=1.0, load=lambda t: 0.0, target=lambda t: 1.0 if t >= 1 else 0.0,
+         initial_velocity=0.0, limit=4.0):
     def factory(rng):
-        position = velocity = 0.0
+        position, velocity = 0.0, initial_velocity
 
         def step(t, p):
             nonlocal position, velocity
             reference = target(t)
             kp, kv = gain(mass, p["q_position"], p["q_velocity"], p["r_effort"])
-            effort = clamp(kp * (reference - position) - kv * velocity, 4.0)
+            effort = clamp(kp * (reference - position) - kv * velocity, limit)
             row = {"reference": reference, "output": position, "effort": effort}
             acceleration = (effort - load(t)) / mass
             position += DT * velocity + 0.5 * DT**2 * acceleration
