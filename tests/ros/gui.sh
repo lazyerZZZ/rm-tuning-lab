@@ -18,6 +18,10 @@ for _ in {1..40}; do
       ros2 topic info /tuning_lab/reference | grep -Eq 'Subscription count: [1-9]'; then
     printf '%s\n' "$titles"
     python3 tests/ros/editor.py
+    plot_window=$(xdotool search --onlyvisible --name 'LessonPlot' | head -1)
+    xdotool windowraise "$plot_window"
+    sleep 8
+    python3 tests/ros/capture.py "$plot_window"
     exit 0
   fi
   kill -0 "$launcher" || exit 1

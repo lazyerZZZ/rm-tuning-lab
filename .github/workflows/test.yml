@@ -27,3 +27,8 @@ jobs:
           source /opt/ros/jazzy/setup.bash
           source install/setup.bash
           xvfb-run -a bash tests/ros/gui.sh
+      - name: Save the live rqt plot
+        uses: actions/upload-artifact@v4
+        with:
+          name: rqt-preview
+          path: rqt-plot.png
