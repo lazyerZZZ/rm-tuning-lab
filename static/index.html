@@ -4,6 +4,6 @@
 <header><strong>轮迹</strong><span>RM 调参实验台</span></header>
 <main><section class="scope"><label for="case">选择实验</label><select id="case"></select>
 <h1 id="title">响应曲线</h1><p id="lesson"></p>
-<div id="plots"></div>
+<div class="compare"><button id="pin" disabled>保留本次响应作对照</button><button id="clear" hidden>清除对照</button><output id="score"></output></div><div id="plots"></div>
 </section><aside><h2>模型参数</h2><form id="knobs"></form><button id="reset">恢复默认参数</button><p role="status" id="status"></p></aside></main>
 <script src="app.js"></script></html>

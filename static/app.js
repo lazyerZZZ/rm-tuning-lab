@@ -1,7 +1,7 @@
 const byId = id => document.getElementById(id);
 const picker = byId("case");
 const form = byId("knobs");
-let cases, rows = [], request = 0;
+let cases, rows = [], request = 0, baseline = null, completedParams = null;
 const colors = {reference:"#344958", output:"#00749e", measurement:"#b66519", effort:"#98448e"};
 const names = {reference:"目标 / 真值", output:"响应 / 估计", measurement:"观测", effort:"控制量"};
 
@@ -11,6 +11,7 @@ function drawPanel(canvas, keys) {
   canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
   const ctx = canvas.getContext("2d"); ctx.scale(scale, scale);
   const values = rows.flatMap(row => keys.map(k => row[k]));
+  if (baseline && keys.includes("output")) values.push(...baseline.rows.map(row=>row.output));
   const lo = Math.min(0,...values)-0.1, hi = Math.max(0,...values)+0.1;
   const x = t => 49 + (w-68) * t / rows[rows.length-1].t;
   const y = v => 12 + (h-48) * (hi-v)/(hi-lo);
@@ -21,6 +22,11 @@ function drawPanel(canvas, keys) {
     ctx.strokeStyle="#dbe6eb";ctx.beginPath();ctx.moveTo(47,y(v));ctx.lineTo(w-17,y(v));ctx.stroke();
     const t=rows[rows.length-1].t*i/4;
     ctx.fillText(t.toFixed(1)+"s",x(t)-12,h-10);
+  }
+  if (baseline && keys.includes("output")) {
+    ctx.strokeStyle="#8258ad";ctx.lineWidth=2;ctx.setLineDash([2,4]);ctx.beginPath();
+    baseline.rows.forEach((row,i)=>i?ctx.lineTo(x(row.t),y(row.output)):ctx.moveTo(x(row.t),y(row.output)));
+    ctx.stroke();
   }
   for(const key of keys) {
     ctx.strokeStyle=colors[key] || "#405b58";ctx.lineWidth=key==="output"?2.7:1.4;
@@ -56,6 +62,10 @@ function draw() {
         : ({velocity:"估计速度",valid:"观测有效",...names})[key] || key;
       caption.append(item);
     }
+    if(baseline && keys.includes("output")) {
+      const note=document.createElement("span");note.style.color="#8258ad";
+      note.textContent="对照 · "+baseline.params;caption.append(note);
+    }
     const canvas=document.createElement("canvas");
     canvas.setAttribute("aria-label", caption.textContent+" 随时间变化");
     figure.append(caption,canvas);container.append(figure);drawPanel(canvas,keys);
@@ -63,15 +73,31 @@ function draw() {
 }
 async function run() {
   const id=++request;
+  byId('pin').disabled=true;
+  byId('status').textContent='等待有效参数';
   if (!form.reportValidity()) return;
   const qs = new URLSearchParams(new FormData(form));qs.set("case",picker.value);
   try {
     const res=await fetch("/api/run?"+qs);
     const data=await res.json();if(!res.ok) throw Error(data.error);
     if(id!==request) return;
-    rows=data;draw();byId("status").textContent="仿真完成 · "+rows.length+" 个采样点";
+    rows=data;
+    completedParams=Array.from(qs, ([k,v])=>k==="case"?"":k+"="+v).filter(Boolean).join(" · ");
+    byId("pin").disabled=false;
+    refreshComparison();byId("status").textContent="仿真完成 · "+rows.length+" 个采样点";
   } catch(e) {if(id===request) byId("status").textContent=e.message;}
 }
+function rmse(samples) {
+  return Math.sqrt(samples.reduce((sum,r)=>sum+(r.output-r.reference)**2,0)/samples.length);
+}
+function refreshComparison() {
+  const current=rmse(rows).toFixed(3);
+  byId("score").textContent="均方根误差 "+current+(baseline?"（对照 "+rmse(baseline.rows).toFixed(3)+"）":"")+" "+cases[picker.value].unit;
+  byId("clear").hidden=!baseline;
+  draw();
+}
+byId("pin").onclick=()=>{baseline={rows,params:completedParams};refreshComparison()};
+byId("clear").onclick=()=>{baseline=null;refreshComparison()};
 function selectCase() {
   const c=cases[picker.value];byId("title").textContent=c.title;byId("lesson").textContent=c.lesson;
   form.replaceChildren();
@@ -87,6 +113,9 @@ async function init() {
   for(const [id,c] of Object.entries(cases)) picker.add(new Option(c.group+" / "+c.title,id));
   selectCase();
 }
-picker.onchange=selectCase;form.onchange=run;form.onsubmit=e=>{e.preventDefault();run()};
+picker.onchange=()=>{
+  baseline=null;rows=[];byId("score").textContent="";byId("clear").hidden=true;
+  byId("plots").replaceChildren();selectCase();
+};form.onchange=run;form.onsubmit=e=>{e.preventDefault();run()};
 byId("reset").onclick=selectCase;window.addEventListener("resize",draw);
 init().catch(e=>byId("status").textContent=e.message);
