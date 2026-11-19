@@ -6,3 +6,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 -m unittest discover -s tests -v
+  jazzy:
+    runs-on: ubuntu-24.04
+    container: ros:jazzy-ros-base
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and probe live ROS interfaces
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --packages-select rm_tuning_lab
+          source install/setup.bash
+          python3 tests/ros/live.py
