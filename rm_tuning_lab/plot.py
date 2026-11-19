@@ -6,6 +6,8 @@ from rqt_plot.plot import Plot
 class LessonPlot(Plot):
     def __init__(self, context):
         super().__init__(context)
+        # Keep the response visible even on a fresh rqt profile.
+        self._widget.setMinimumSize(480, 300)
         self.pending = {"/tuning_lab/reference", "/tuning_lab/output"}
         self.discovery = QTimer(self._widget)
         self.discovery.timeout.connect(self.connect_curves)

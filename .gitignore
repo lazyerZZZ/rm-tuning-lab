@@ -2,3 +2,8 @@ __pycache__/
 *.py[cod]
 .DS_Store
 .venv/
+build/
+install/
+log/
+*.egg-info/
+rqt-plot.png

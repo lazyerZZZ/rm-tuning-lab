@@ -19,6 +19,8 @@ for _ in {1..40}; do
     printf '%s\n' "$titles"
     python3 tests/ros/editor.py
     plot_window=$(xdotool search --onlyvisible --name 'LessonPlot' | head -1)
+    xdotool windowsize --sync "$plot_window" 900 520
+    xdotool windowmove "$plot_window" 0 0
     xdotool windowraise "$plot_window"
     sleep 8
     python3 tests/ros/capture.py "$plot_window"
