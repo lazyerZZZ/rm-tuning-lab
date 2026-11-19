@@ -2,6 +2,8 @@
 
 面向 RoboMaster 新队员的中文 ROS 2 教学项目。先猜改变一个参数后曲线会怎样，再在 rqt 里动手验证。所有实验使用模拟轮组、滑台和传感器。
 
+[从轮速开始的四堂实验课](docs/lessons.md) · [全部 25 个实验及调参任务](docs/catalog.md) · [自定义模型示例](examples/custom_lab.py)
+
 ## 在 rqt 中做第一个实验
 
 以下命令面向已安装 ROS 2 Jazzy 的 Ubuntu 24.04。安装工具并编译一次：
@@ -34,7 +36,7 @@ ros2 service call /tuning_lab/reset std_srvs/srv/Trigger '{}'
 
 ## 选择实验
 
-启动时改变 `case_id`。轮组实验有 `wheel_step`、`wheel_load`，滑台有 `cart_stop`、`cart_heavy`，测距实验有 `range_step`、`range_wave`。PID 与 LQR 的第三条曲线是 `/tuning_lab/effort/data`，Kalman 的第三条曲线是 `/tuning_lab/measurement/data`。它的 reference 为仿真真值，output 为估计值。每个实验的操作与观察提示会打印在节点终端。
+启动时改变 `case_id`。可从 `wheel_step` 的轮速、`cart_stop` 的滑台定位、`range_step` 的测距或 `carriage_loops` 的串级控制开始。完整的参数对照任务见[实验目录](docs/catalog.md)。PID 与 LQR 的第三条曲线是 `/tuning_lab/effort/data`，Kalman 的第三条曲线是 `/tuning_lab/measurement/data`。它的 reference 为仿真真值，output 为估计值。每个实验的操作与观察提示会打印在节点终端。
 
 ## 只有 Python 时
 
